@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ASSET DESK — 자산 커맨드 대시보드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  :root{
+    --bg:#0F1216; --panel:#171B21; --panel2:#1E242B; --border:#2A313A;
+    --text:#E6E1D6; --dim:#8B93A0; --faint:#5A626E;
+    --accent:#D8B14A; --pos:#56B881; --neg:#E5635E; --warn:#E0A23A;
+    --mono:"SF Mono",ui-monospace,"Cascadia Mono",Consolas,"D2Coding",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+    font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 18px 80px}
+  .eyebrow{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);font-weight:600}
+  header.top{display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:22px;gap:16px;flex-wrap:wrap}
+  header.top h1{margin:4px 0 0;font-size:22px;letter-spacing:.04em;font-weight:700}
+  header.top .sub{color:var(--dim);font-size:12.5px;margin-top:2px}
+  .qbadge{font-size:11px;color:var(--bg);background:var(--accent);padding:3px 9px;border-radius:3px;
+    font-weight:700;letter-spacing:.04em}
+  .qbadge.off{background:var(--panel2);color:var(--dim);border:1px solid var(--border)}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:1.15fr .85fr}
+  .g2b{grid-template-columns:1fr 1fr}
+  @media(max-width:840px){.g2,.g2b{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:7px;padding:16px 16px 15px}
+  .panel h2{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+    margin:0 0 12px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .panel h2 .hint{letter-spacing:0;text-transform:none;font-size:10.5px;color:var(--faint)}
+  /* hero */
+  .hero{background:linear-gradient(160deg,#1A2129,#14181E);border:1px solid var(--border)}
+  .hero .label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  .hero .big{font-family:var(--mono);font-size:46px;font-weight:600;line-height:1;margin:6px 0 2px}
+  .hero .goal{color:var(--dim);font-size:13px}
+  .bar{height:9px;background:var(--panel2);border-radius:5px;margin-top:14px;overflow:hidden;border:1px solid var(--border)}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#E9C766)}
+  .heromini{display:flex;gap:22px;margin-top:14px;flex-wrap:wrap}
+  .heromini > div .k{font-size:10.5px;color:var(--dim);letter-spacing:.06em}
+  .heromini > div .v{font-family:var(--mono);font-size:16px;margin-top:1px}
+  .verdict{margin-top:13px;font-size:12.5px;padding:8px 11px;border-radius:5px;border:1px solid}
+  .verdict.ok{border-color:rgba(86,184,129,.4);background:rgba(86,184,129,.08);color:var(--pos)}
+  .verdict.bad{border-color:rgba(229,99,94,.4);background:rgba(229,99,94,.08);color:var(--neg)}
+  /* rows / inputs */
+  table{width:100%;border-collapse:collapse}
+  td,th{padding:5px 4px;text-align:left;font-size:13px}
+  th{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:600;border-bottom:1px solid var(--border)}
+  td.r,th.r{text-align:right}
+  tr.line td{border-bottom:1px solid rgba(42,49,58,.5)}
+  input,select{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:4px;padding:4px 7px;font-family:var(--mono);font-size:13px;width:100%;outline:none}
+  input:focus,select:focus{border-color:var(--accent)}
+  input.txt{font-family:var(--sans);text-align:left}
+  input.amt{text-align:right;width:96px}
+  .ib{display:inline-flex;align-items:center;gap:6px}
+  button{font-family:var(--sans);cursor:pointer;border-radius:4px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--text);font-size:12px;padding:4px 10px}
+  button:hover{border-color:var(--accent)}
+  button.x{padding:2px 7px;color:var(--neg);border-color:transparent;background:transparent;font-size:14px}
+  button.x:hover{border-color:var(--neg)}
+  button.add{margin-top:8px;color:var(--accent)}
+  .sumrow td{border-top:1px solid var(--border);font-family:var(--mono);font-weight:600;padding-top:8px}
+  .pos{color:var(--pos)} .neg{color:var(--neg)} .warn{color:var(--warn)} .acc{color:var(--accent)} .dim{color:var(--dim)}
+  /* portfolio drift */
+  .pf{display:flex;align-items:center;gap:10px;padding:7px 0}
+  .pf .name{width:78px;font-size:12.5px}
+  .pf .track{flex:1;height:18px;background:var(--panel2);border-radius:4px;position:relative;overflow:hidden;border:1px solid var(--border)}
+  .pf .tgt{position:absolute;top:0;bottom:0;width:2px;background:var(--dim)}
+  .pf .act{position:absolute;top:0;bottom:0;left:0;background:rgba(216,177,74,.35)}
+  .pf .d{width:70px;text-align:right;font-family:var(--mono);font-size:12.5px}
+  /* spread gauge */
+  .spread{margin:14px 0 4px}
+  .spread .lbl{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px}
+  .spread .gtrack{position:relative;height:30px;background:var(--panel2);border-radius:5px;border:1px solid var(--border)}
+  .spread .seg-have{position:absolute;top:0;bottom:0;left:0;background:rgba(86,184,129,.25);border-right:2px solid var(--pos)}
+  .spread .seg-gap{position:absolute;top:0;bottom:0;background:rgba(224,162,58,.22)}
+  .spread .seg-gap.hot{background:rgba(229,99,94,.25)}
+  .spread .trigline{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--neg)}
+  .spread .triglbl{position:absolute;top:-16px;font-size:9.5px;color:var(--neg);transform:translateX(-50%)}
+  .spread .gaptag{position:absolute;top:7px;font-family:var(--mono);font-size:12px;transform:translateX(-50%)}
+  /* dca */
+  .dca-row{display:flex;align-items:center;gap:10px;padding:5px 0}
+  .dca-row .dt{width:90px;font-family:var(--mono);font-size:12.5px;color:var(--dim)}
+  .dca-row .am{flex:1;font-family:var(--mono);font-size:13px}
+  .chk{width:18px;height:18px;border:1.5px solid var(--border);border-radius:4px;display:inline-flex;
+    align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:var(--bg)}
+  .chk.on{background:var(--pos);border-color:var(--pos)}
+  /* triggers */
+  .trig{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:5px;margin-bottom:7px;
+    border:1px solid var(--border);background:var(--panel2);font-size:13px}
+  .trig.fire{border-color:rgba(229,99,94,.5);background:rgba(229,99,94,.08)}
+  .trig.warn{border-color:rgba(224,162,58,.45);background:rgba(224,162,58,.07)}
+  .trig .dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex-shrink:0}
+  .trig.fire .dot{background:var(--neg)} .trig.warn .dot{background:var(--warn)}
+  .trig .body{flex:1}
+  .trig .ttl{font-weight:600} .trig .dd{font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .assum{display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;margin-top:4px}
+  .assum label{font-size:11px;color:var(--dim);display:block;letter-spacing:.04em}
+  .assum .ig{display:flex;align-items:center;gap:6px}
+  .assum .unit{color:var(--faint);font-size:11px;font-family:var(--mono)}
+  .foot{margin-top:24px;color:var(--faint);font-size:11px;text-align:center;line-height:1.7}
+  .reset{color:var(--faint);text-decoration:underline;cursor:pointer}
+  .chartwrap{margin-top:6px}
+  .legend{display:flex;gap:16px;font-size:11px;color:var(--dim);margin-top:8px;justify-content:center}
+  .legend i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:5px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useMemo} = React;
+
+// ---- storage (degrades to in-memory if blocked, e.g. claude.ai preview) ----
+const store = {
+  get(k){ try{ return localStorage.getItem(k);}catch(e){return null;} },
+  set(k,v){ try{ localStorage.setItem(k,v);}catch(e){} }
+};
+const KEY = "assetdesk_v1";
+
+// ---- format helpers (base unit = 만원) ----
+const won = n => {
+  if(n==null||isNaN(n)) return "–";
+  if(Math.abs(n)>=10000) return (n/10000).toFixed(1).replace(/\.0$/,"")+"억";
+  return Math.round(n).toLocaleString()+"만";
+};
+const pct = n => (n>=0?"+":"")+n.toFixed(1)+"%p";
+const uid = () => Math.random().toString(36).slice(2,8);
+
+// ---- seed data from asset_plan_v2 (2026.3) ----
+const SEED = {
+  assets:[
+    {id:uid(),name:"금호동 아파트 (25평)",value:220000,type:"re"},
+    {id:uid(),name:"비상금",value:2500,type:"cash"},
+    {id:uid(),name:"IRP",value:4800,type:"invest"},
+    {id:uid(),name:"연금저축",value:1500,type:"invest"},
+    {id:uid(),name:"회사 주가연계적금",value:1800,type:"invest"},
+    {id:uid(),name:"청약저축",value:1170,type:"cash"},
+    {id:uid(),name:"DCA 포트폴리오 (누적)",value:680,type:"invest"},
+  ],
+  liabs:[
+    {id:uid(),name:"주담대 (금호동)",value:85000,rate:3.26},
+    {id:uid(),name:"배우자 회사대출",value:7000,rate:1.0},
+  ],
+  pf:{ targets:{나스닥100:50,TIGER200:20,BTC:15,KRX금:15},
+       actuals:{나스닥100:5013,TIGER200:2005,BTC:1504,KRX금:1503}, drift:7 },
+  apt:{ current:{name:"금호동",price:220000},
+        targets:[{id:uid(),name:"잠실장미 29평",price:300000},
+                 {id:uid(),name:"도곡우성 84평",price:280000}], trigger:100000 },
+  dca:{ pre:680, target:10025,
+        sched:[{id:uid(),date:"2026-03-21",amount:2300,done:false},
+               {id:uid(),date:"2026-04-21",amount:2600,done:false},
+               {id:uid(),date:"2026-05-21",amount:2600,done:false},
+               {id:uid(),date:"2026-06-21",amount:2525,done:false}] },
+  sim:{ startFin:12450, monthlyNow:225, monthlyAfter:400, stepUp:"2027-06",
+        ret:8, reGrowth:3, reCurrent:220000, endLiab:92000, endYear:2034, goal:300000 },
+};
+
+function load(){
+  const raw = store.get(KEY);
+  if(raw){ try{ return JSON.parse(raw);}catch(e){} }
+  return JSON.parse(JSON.stringify(SEED));
+}
+
+// ---- compound projection ----
+function project(sim,curLiab){
+  const startY=2026, pts=[];
+  const mR=Math.pow(1+sim.ret/100,1/12)-1;
+  const [suY,suM]=sim.stepUp.split("-").map(Number);
+  let fin=sim.startFin;
+  // current point (Dec 2026 baseline uses startFin as-is)
+  const reAt = y => sim.reCurrent*Math.pow(1+sim.reGrowth/100, y-startY);
+  const liabAt = y => { const span=sim.endYear-startY; if(span<=0) return curLiab;
+    return curLiab + (sim.endLiab-curLiab)*((y-startY)/span); };
+  pts.push({year:startY, fin:sim.startFin, re:reAt(startY), liab:curLiab,
+            net:sim.startFin+reAt(startY)-curLiab});
+  for(let y=startY+1;y<=sim.endYear;y++){
+    for(let m=1;m<=12;m++){
+      const stepped = (y>suY)||(y===suY&&m>=suM);
+      const c = stepped?sim.monthlyAfter:sim.monthlyNow;
+      fin = fin*(1+mR)+c;
+    }
+    pts.push({year:y, fin, re:reAt(y), liab:liabAt(y), net:fin+reAt(y)-liabAt(y)});
+  }
+  return pts;
+}
+
+// ---- tiny SVG line chart ----
+function LineChart({pts,goal}){
+  const W=560,H=210,padL=8,padR=8,padT=14,padB=22;
+  const xs=pts.map(p=>p.year), ys=pts.map(p=>p.net);
+  const maxV=Math.max(goal,...ys)*1.08, minV=0;
+  const x=i=> padL+(W-padL-padR)*(i/(pts.length-1));
+  const y=v=> padT+(H-padT-padB)*(1-(v-minV)/(maxV-minV));
+  const line=pts.map((p,i)=>`${x(i)},${y(p.net)}`).join(" ");
+  const area=`${padL},${y(0)} `+line+` ${W-padR},${y(0)}`;
+  const gY=y(goal);
+  // goal crossing
+  let cross=null;
+  for(let i=1;i<pts.length;i++){ if(pts[i-1].net<goal&&pts[i].net>=goal){
+    const t=(goal-pts[i-1].net)/(pts[i].net-pts[i-1].net);
+    cross={x:x(i-1)+(x(i)-x(i-1))*t, year:pts[i].year}; break; } }
+  return (
+    <div className="chartwrap">
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{display:"block"}}>
+      <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="rgba(216,177,74,.22)"/>
+        <stop offset="100%" stopColor="rgba(216,177,74,0)"/></linearGradient></defs>
+      <polygon points={area} fill="url(#ag)"/>
+      <line x1={padL} y1={gY} x2={W-padR} y2={gY} stroke="#56B881" strokeWidth="1" strokeDasharray="4 4"/>
+      <text x={W-padR} y={gY-5} textAnchor="end" fontSize="10" fill="#56B881" fontFamily="var(--mono)">목표 {won(goal)}</text>
+      <polyline points={line} fill="none" stroke="#D8B14A" strokeWidth="2"/>
+      {pts.map((p,i)=>(i%2===0||i===pts.length-1)&&
+        <g key={i}><circle cx={x(i)} cy={y(p.net)} r="2.5" fill="#D8B14A"/>
+        <text x={x(i)} y={H-7} textAnchor="middle" fontSize="9.5" fill="#5A626E" fontFamily="var(--mono)">{p.year}</text></g>)}
+      <text x={x(pts.length-1)} y={y(pts[pts.length-1].net)-8} textAnchor="end" fontSize="11" fill="#E6E1D6" fontFamily="var(--mono)" fontWeight="600">{won(pts[pts.length-1].net)}</text>
+      {cross && <g><line x1={cross.x} y1={padT} x2={cross.x} y2={H-padB} stroke="#56B881" strokeWidth="1" opacity=".5"/>
+        <text x={cross.x} y={padT+2} textAnchor="middle" fontSize="9.5" fill="#56B881" fontFamily="var(--mono)">{cross.year} 달성</text></g>}
+    </svg>
+    <div className="legend"><span><i style={{background:"#D8B14A"}}></i>예상 순자산</span>
+      <span><i style={{background:"#56B881"}}></i>목표 30억</span></div>
+    </div>
+  );
+}
+
+function App(){
+  const init=load();
+  const [assets,setAssets]=useState(init.assets);
+  const [liabs,setLiabs]=useState(init.liabs);
+  const [pf,setPf]=useState(init.pf);
+  const [apt,setApt]=useState(init.apt);
+  const [dca,setDca]=useState(init.dca);
+  const [sim,setSim]=useState(init.sim);
+  const [saved,setSaved]=useState("");
+
+  useEffect(()=>{
+    const data={assets,liabs,pf,apt,dca,sim};
+    store.set(KEY,JSON.stringify(data));
+    setSaved(new Date().toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}));
+  },[assets,liabs,pf,apt,dca,sim]);
+
+  // ---- derived ----
+  const totAsset=assets.reduce((s,a)=>s+(+a.value||0),0);
+  const totLiab=liabs.reduce((s,a)=>s+(+a.value||0),0);
+  const net=totAsset-totLiab;
+  const finAssets=assets.filter(a=>a.type!=="re").reduce((s,a)=>s+(+a.value||0),0);
+  const reAssets=assets.filter(a=>a.type==="re").reduce((s,a)=>s+(+a.value||0),0);
+  const goal=sim.goal;
+  const progress=Math.min(100,Math.max(0,net/goal*100));
+
+  const pfTotal=Object.values(pf.actuals).reduce((s,v)=>s+(+v||0),0)||1;
+  const drifts=Object.keys(pf.targets).map(k=>{
+    const actPct=(pf.actuals[k]||0)/pfTotal*100;
+    return {k,tgt:pf.targets[k],act:actPct,d:actPct-pf.targets[k]};
+  });
+  const driftFire=drifts.filter(d=>Math.abs(d.d)>=pf.drift);
+
+  const maxAptPrice=Math.max(...apt.targets.map(t=>+t.price||0),apt.current.price)*1.05;
+  const aptGaps=apt.targets.map(t=>({...t,gap:(+t.price||0)-apt.current.price,
+    hot:((+t.price||0)-apt.current.price)>=apt.trigger}));
+
+  const dcaDone=dca.pre+dca.sched.filter(s=>s.done).reduce((s,x)=>s+(+x.amount||0),0);
+  const dcaPct=Math.min(100,dcaDone/dca.target*100);
+
+  const proj=useMemo(()=>project(sim,totLiab),[sim,totLiab]);
+  const projEnd=proj[proj.length-1].net;
+  const onTrack=projEnd>=goal;
+
+  // ---- triggers ----
+  const now=new Date();
+  const dday=(iso)=>Math.ceil((new Date(iso)-now)/86400000);
+  const maxRate=Math.max(...liabs.map(l=>+l.rate||0));
+  const inReviewQ=[2,5,8,11].includes(now.getMonth()); // 3/6/9/12월
+  const triggers=[];
+  aptGaps.forEach(g=>{ if(g.hot) triggers.push({lv:"fire",ttl:`갈아타기 갭 10억 돌파 — ${g.name}`,
+    sub:`현재 갭 ${won(g.gap)} · 플랜상 잠실 포기 검토 트리거`}); });
+  driftFire.forEach(d=>triggers.push({lv:"warn",ttl:`비중 드리프트 ${pct(d.d)} — ${d.k}`,
+    sub:`목표 ${d.tgt}% 대비 ±${pf.drift}%p 초과 · 리밸런싱 검토`}));
+  if(maxRate>=5) triggers.push({lv:"fire",ttl:"대출 금리 5% 돌파",sub:"플랜상 부분 조기상환 검토 트리거"});
+  const btcDday=dday("2027-01-01");
+  if(btcDday>0) triggers.push({lv:"warn",ttl:"BTC 양도세 시행 (2027.1)",sub:`D-${btcDday} · 수익실현 후 재진입 전략 점검`});
+  const rateDday=dday("2029-03-01");
+  if(rateDday>0) triggers.push({lv:"warn",ttl:"주담대 금리 리셋 예상 (2029)",sub:`D-${rateDday} · 3~4년차 버퍼 확보`});
+  const undone=dca.sched.find(s=>!s.done && new Date(s.date)<=now);
+  if(undone) triggers.push({lv:"fire",ttl:"DCA 미실행분 있음",sub:`${undone.date} ${won(undone.amount)} 실행 필요`});
+  if(inReviewQ) triggers.push({lv:"warn",ttl:"분기 리뷰 시즌",sub:"비중 점검 · 갭 추적 · 금리/규제 확인"});
+  if(!triggers.length) triggers.push({lv:"ok",ttl:"트리거 없음",sub:"기계적으로 실행만. 변경 없음."});
+
+  // ---- editors ----
+  const upd=(setter,arr,id,field,val)=>setter(arr.map(r=>r.id===id?{...r,[field]:val}:r));
+  const numOnly=v=>v===""?"":(+v);
+
+  return (
+  <div className="wrap">
+    <header className="top">
+      <div><div className="eyebrow">Asset Command Desk</div>
+        <h1>자산 커맨드 대시보드</h1>
+        <div className="sub">목표 순자산 30억 · 2026–2034 · 나스닥50 / 한국20 / BTC15 / 금15</div></div>
+      <div style={{textAlign:"right"}}>
+        <span className={"qbadge"+(inReviewQ?"":" off")}>{inReviewQ?"분기 리뷰 시즌":"리뷰 외 — 실행만"}</span>
+        <div className="sub" style={{marginTop:6}}>저장됨 {saved}</div></div>
+    </header>
+
+    {/* HERO + WHERE I STAND */}
+    <div className="grid g2" style={{marginBottom:14}}>
+      <div className="panel hero">
+        <div className="label">순자산 (Net Worth)</div>
+        <div className="big">{won(net)}</div>
+        <div className="goal">목표 {won(goal)}까지 <span className="acc num">{won(goal-net)}</span> 남음 · 달성률 <span className="num">{progress.toFixed(1)}%</span></div>
+        <div className="bar"><i style={{width:progress+"%"}}></i></div>
+        <div className="heromini">
+          <div><div className="k">총자산</div><div className="v">{won(totAsset)}</div></div>
+          <div><div className="k">총부채</div><div className="v neg">{won(totLiab)}</div></div>
+          <div><div className="k">금융자산</div><div className="v">{won(finAssets)}</div></div>
+          <div><div className="k">실물자산</div><div className="v">{won(reAssets)}</div></div>
+        </div>
+        <div className={"verdict "+(onTrack?"ok":"bad")}>
+          {onTrack
+            ? `현 가정 유지 시 ${sim.endYear}년 예상 순자산 ${won(projEnd)} — 목표 초과 (+${won(projEnd-goal)})`
+            : `현 가정 유지 시 ${sim.endYear}년 예상 순자산 ${won(projEnd)} — 목표 대비 ${won(goal-projEnd)} 부족`}
+        </div>
+      </div>
+
+      {/* DECISION TRIGGERS */}
+      <div className="panel">
+        <h2>의사결정 트리거 <span className="hint">지금 행동할 것</span></h2>
+        {triggers.map((t,i)=>(
+          <div key={i} className={"trig "+(t.lv==="ok"?"":t.lv)}>
+            <span className="dot"></span>
+            <div className="body"><div className="ttl">{t.ttl}</div><div className="dd">{t.sub}</div></div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* COMPOUND PROJECTION */}
+    <div className="panel" style={{marginBottom:14}}>
+      <h2>복리 자산 추이 <span className="hint">가정을 바꾸면 즉시 반영됨 — 예측이 아닌 방향성 도구</span></h2>
+      <div className="grid g2">
+        <LineChart pts={proj} goal={goal}/>
+        <div>
+          <div className="assum">
+            <div><label>시작 금융자산</label><div className="ig"><input className="amt num" style={{width:"100%"}} value={sim.startFin} onChange={e=>setSim({...sim,startFin:+e.target.value||0})}/><span className="unit">만</span></div></div>
+            <div><label>금융 기대수익률(연)</label><div className="ig"><input className="amt num" style={{width:"100%"}} value={sim.ret} onChange={e=>setSim({...sim,ret:+e.target.value||0})}/><span className="unit">%</span></div></div>
+            <div><label>월 투자 (현재)</label><div className="ig"><input className="amt num" style={{width:"100%"}} value={sim.monthlyNow} onChange={e=>setSim({...sim,monthlyNow:+e.target.value||0})}/><span className="unit">만</span></div></div>
+            <div><label>월 투자 (복직 후)</label><div className="ig"><input className="amt num" style={{width:"100%"}} value={sim.monthlyAfter} onChange={e=>setSim({...sim,monthlyAfter:+e.target.value||0})}/><span className="unit">만</span></div></div>
+            <div><label>복직 시점</label><input className="num" value={sim.stepUp} onChange={e=>setSim({...sim,stepUp:e.target.value})}/></div>
+            <div><label>부동산 성장률(연)</label><div className="ig"><input className="amt num" style={{width:"100%"}} value={sim.reGrowth} onChange={e=>setSim({...sim,reGrowth:+e.target.value||0})}/><span className="unit">%</span></div></div>
+            <div><label>현 부동산 가치</label><div className="ig"><input className="amt num" style={{width:"100%"}} value={sim.reCurrent} onChange={e=>setSim({...sim,reCurrent:+e.target.value||0})}/><span className="unit">만</span></div></div>
+            <div><label>{sim.endYear}년 예상 부채</label><div className="ig"><input className="amt num" style={{width:"100%"}} value={sim.endLiab} onChange={e=>setSim({...sim,endLiab:+e.target.value||0})}/><span className="unit">만</span></div></div>
+          </div>
+          <div className="dim" style={{fontSize:11,marginTop:11,lineHeight:1.6}}>
+            부채는 현재 {won(totLiab)} → {sim.endYear}년 {won(sim.endLiab)}으로 선형 감소 가정.
+            금융자산엔 월 투자만 복리 적용(성과급 DCA는 ‘시작 금융자산’ 갱신으로 반영).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* ASSET STATUS + LIABILITIES */}
+    <div className="grid g2b" style={{marginBottom:14}}>
+      <div className="panel">
+        <h2>자산 현황 <span className="hint">직접 추가/수정</span></h2>
+        <table><thead><tr><th>항목</th><th style={{width:90}}>구분</th><th className="r" style={{width:110}}>금액</th><th style={{width:28}}></th></tr></thead>
+        <tbody>{assets.map(a=>(
+          <tr className="line" key={a.id}>
+            <td><input className="txt" value={a.name} onChange={e=>upd(setAssets,assets,a.id,"name",e.target.value)}/></td>
+            <td><select value={a.type} onChange={e=>upd(setAssets,assets,a.id,"type",e.target.value)}>
+              <option value="cash">현금성</option><option value="invest">투자</option><option value="re">실물</option></select></td>
+            <td className="r"><input className="amt num" value={a.value} onChange={e=>upd(setAssets,assets,a.id,"value",numOnly(e.target.value))}/></td>
+            <td><button className="x" onClick={()=>setAssets(assets.filter(x=>x.id!==a.id))}>×</button></td>
+          </tr>))}
+          <tr className="sumrow"><td>총자산</td><td></td><td className="r">{won(totAsset)}</td><td></td></tr>
+        </tbody></table>
+        <button className="add" onClick={()=>setAssets([...assets,{id:uid(),name:"새 자산",value:0,type:"cash"}])}>+ 자산 추가</button>
+      </div>
+
+      <div className="panel">
+        <h2>부채 <span className="hint">금리 5% 돌파 시 트리거</span></h2>
+        <table><thead><tr><th>항목</th><th className="r" style={{width:70}}>금리%</th><th className="r" style={{width:100}}>잔액</th><th style={{width:28}}></th></tr></thead>
+        <tbody>{liabs.map(l=>(
+          <tr className="line" key={l.id}>
+            <td><input className="txt" value={l.name} onChange={e=>upd(setLiabs,liabs,l.id,"name",e.target.value)}/></td>
+            <td className="r"><input className="amt num" style={{width:56}} value={l.rate} onChange={e=>upd(setLiabs,liabs,l.id,"rate",numOnly(e.target.value))}/></td>
+            <td className="r"><input className="amt num" value={l.value} onChange={e=>upd(setLiabs,liabs,l.id,"value",numOnly(e.target.value))}/></td>
+            <td><button className="x" onClick={()=>setLiabs(liabs.filter(x=>x.id!==l.id))}>×</button></td>
+          </tr>))}
+          <tr className="sumrow"><td>총부채</td><td></td><td className="r neg">{won(totLiab)}</td><td></td></tr>
+        </tbody></table>
+        <button className="add" onClick={()=>setLiabs([...liabs,{id:uid(),name:"새 부채",value:0,rate:0}])}>+ 부채 추가</button>
+        <div style={{marginTop:16}}>
+          <h2 style={{marginBottom:9}}>순자산</h2>
+          <div className="num" style={{fontSize:24}}>{won(net)}</div>
+        </div>
+      </div>
+    </div>
+
+    {/* PORTFOLIO DRIFT + DCA */}
+    <div className="grid g2b" style={{marginBottom:14}}>
+      <div className="panel">
+        <h2>포트폴리오 드리프트 <span className="hint">±{pf.drift}%p 초과 시 리밸런싱</span></h2>
+        {drifts.map(d=>(
+          <div className="pf" key={d.k}>
+            <span className="name">{d.k}</span>
+            <div className="track">
+              <div className="act" style={{width:Math.min(100,d.act)+"%"}}></div>
+              <div className="tgt" style={{left:d.tgt+"%"}}></div>
+            </div>
+            <span className={"d "+(Math.abs(d.d)>=pf.drift?"warn":"dim")}>{d.act.toFixed(1)}% ({pct(d.d)})</span>
+          </div>
+        ))}
+        <table style={{marginTop:10}}><thead><tr><th>현재 보유액 (직접 갱신)</th>{Object.keys(pf.actuals).map(k=><th key={k} className="r">{k}</th>)}</tr></thead>
+        <tbody><tr><td className="dim" style={{fontSize:11}}>만원</td>
+          {Object.keys(pf.actuals).map(k=>(
+            <td key={k} className="r"><input className="amt num" style={{width:72}} value={pf.actuals[k]}
+              onChange={e=>setPf({...pf,actuals:{...pf.actuals,[k]:+e.target.value||0}})}/></td>))}
+        </tr></tbody></table>
+      </div>
+
+      <div className="panel">
+        <h2>DCA 실행 현황 <span className="hint">체크 = 실행 완료</span></h2>
+        <div className="bar" style={{marginBottom:12}}><i style={{width:dcaPct+"%"}}></i></div>
+        <div className="dim" style={{fontSize:12,marginBottom:8}}>누적 실행 <span className="num acc">{won(dcaDone)}</span> / 목표 <span className="num">{won(dca.target)}</span> ({dcaPct.toFixed(0)}%) · 사전 실행분 {won(dca.pre)} 포함</div>
+        {dca.sched.map(s=>(
+          <div className="dca-row" key={s.id}>
+            <span className={"chk"+(s.done?" on":"")} onClick={()=>setDca({...dca,sched:dca.sched.map(x=>x.id===s.id?{...x,done:!x.done}:x)})}>{s.done?"✓":""}</span>
+            <span className="dt">{s.date}</span>
+            <span className="am">{won(s.amount)}</span>
+            <span className="dim" style={{fontSize:11}}>나{won(s.amount*.5)} · 한{won(s.amount*.2)} · B{won(s.amount*.15)} · 금{won(s.amount*.15)}</span>
+          </div>
+        ))}
+        <div className="dim" style={{fontSize:11,marginTop:10}}>7월부터 월 정기투자 {won(sim.monthlyNow)} (50/20/15/15) 전환 · 2027.6 복직 후 {won(sim.monthlyAfter)} 상향</div>
+      </div>
+    </div>
+
+    {/* SPREAD GAUGE — signature */}
+    <div className="panel">
+      <h2>갈아타기 스프레드 <span className="hint">목표단지 시세 − 금호동 시세 · 갭 10억 돌파 시 잠실 포기 검토</span></h2>
+      <div className="dim" style={{fontSize:12,marginBottom:6}}>기준: {apt.current.name} <input className="amt num" style={{width:84,display:"inline-block"}} value={apt.current.price} onChange={e=>setApt({...apt,current:{...apt.current,price:+e.target.value||0}})}/> 만</div>
+      {aptGaps.map(g=>{
+        const haveW=apt.current.price/maxAptPrice*100;
+        const gapW=(g.price-apt.current.price)/maxAptPrice*100;
+        const trigPos=(apt.current.price+apt.trigger)/maxAptPrice*100;
+        return (
+        <div className="spread" key={g.id}>
+          <div className="lbl">
+            <span><input className="txt" style={{width:130,display:"inline-block"}} value={g.name} onChange={e=>setApt({...apt,targets:apt.targets.map(t=>t.id===g.id?{...t,name:e.target.value}:t)})}/> <input className="amt num" style={{width:84}} value={g.price} onChange={e=>setApt({...apt,targets:apt.targets.map(t=>t.id===g.id?{...t,price:+e.target.value||0}:t)})}/> 만</span>
+            <span className={g.hot?"neg":"warn"}>갭 {won(g.gap)} {g.hot?"· 트리거 ⚠":""}</span>
+          </div>
+          <div className="gtrack">
+            <div className="seg-have" style={{width:haveW+"%"}}></div>
+            <div className={"seg-gap"+(g.hot?" hot":"")} style={{left:haveW+"%",width:Math.max(0,gapW)+"%"}}></div>
+            <div className="gaptag" style={{left:(haveW+gapW/2)+"%"}}>{won(g.gap)}</div>
+            {trigPos<100 && <div className="trigline" style={{left:trigPos+"%"}}></div>}
+            {trigPos<100 && <div className="triglbl" style={{left:trigPos+"%"}}>10억</div>}
+          </div>
+        </div>);
+      })}
+      <button className="add" onClick={()=>setApt({...apt,targets:[...apt.targets,{id:uid(),name:"새 목표단지",price:apt.current.price}]})}>+ 목표단지 추가</button>
+    </div>
+
+    <div className="foot">
+      모든 수치는 직접 입력·수정 가능 · 데이터는 이 브라우저에 저장됨 (claude.ai 미리보기에선 저장 안 됨, 배포 후 정상 작동)<br/>
+      “계획은 실행해야 작동한다. 기계적으로 실행하고, 주기적으로 검토하고, 최소한으로 조정하라.”<br/>
+      <span className="reset" onClick={()=>{if(confirm("플랜 초기값으로 되돌립니다. 입력한 데이터가 삭제됩니다.")){store.set(KEY,JSON.stringify(SEED));location.reload();}}}>초기값으로 리셋</span>
+    </div>
+  </div>);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
